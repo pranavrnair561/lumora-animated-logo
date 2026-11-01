@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Lumora 3D Logo Animation</title>
+<style>:root{color-scheme:dark;--bg:#0E1B2C;--ink:#FFF7E8;--sun:#FFB020}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#w{position:fixed;left:0;right:0;bottom:18%;text-align:center;font:700 clamp(36px,8vw,72px) Sora,Helvetica,Arial,sans-serif;opacity:0}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:16px;justify-content:center;align-items:center}
+button{min-height:44px;padding:0 24px;border:0;border-radius:22px;background:var(--sun);color:var(--bg);font:600 16px Inter,sans-serif;cursor:pointer}
+#s{font-size:14px;min-width:190px}</style></head><body>
+<canvas id="c"></canvas><div id="w">Lumora</div>
+<div id="bar"><button id="r">Replay</button><span id="s"></span></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const T=THREE,cv=document.getElementById('c'),R=new T.WebGLRenderer({canvas:cv,antialias:true});
+R.shadowMap.enabled=true;R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new T.Scene();S.background=new T.Color(0x0E1B2C);S.fog=new T.Fog(0x0E1B2C,14,40);
+const C=new T.PerspectiveCamera(40,1,.1,100);
+const M=(c,r,m,e)=>new T.MeshStandardMaterial({color:c,roughness:r,metalness:m,emissive:e||0,emissiveIntensity:e?1.4:0});
+class Arc extends T.Curve{getPoint(t,o=new T.Vector3()){const a=Math.PI*(1-t);return o.set(2.4*Math.cos(a),2.4*Math.sin(a),0)}}
+const arcG=new T.TubeGeometry(new Arc(),64,.25,16,false),total=arcG.index.count;
+const arc=new T.Mesh(arcG,M(0xFFF7E8,.2,.7));arc.castShadow=true;
+const sun=new T.Mesh(new T.SphereGeometry(1.4,48,32),M(0xFFB020,.4,0,0xFF8A00));sun.position.y=.8;
+const base=new T.Mesh(new T.CylinderGeometry(.25,.25,4,32),M(0x167373,.25,.6));base.rotation.z=Math.PI/2;base.position.y=-1;
+const floor=new T.Mesh(new T.PlaneGeometry(80,80),M(0x0E1B2C,.1,.6));floor.rotation.x=-Math.PI/2;floor.position.y=-2.4;floor.receiveShadow=true;
+S.add(arc,sun,base,floor);
+const key=new T.SpotLight(0xFFD9B0,2,0,.6,.5);key.position.set(-8,9,9);key.castShadow=true;
+const rim=new T.PointLight(0x4FD6D6,1.2,40);rim.position.set(9,3,-5);
+const glow=new T.PointLight(0xFFA030,0,14);glow.position.set(0,.8,2);
+S.add(key,rim,glow,new T.AmbientLight(0x8899bb,.35));
+const E=t=>t<0?0:t>1?1:t*t*(3-2*t),B=t=>{t=Math.min(Math.max(t,0),1);const c=2.2;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
+const seg=(t,a,b)=>Math.min(Math.max((t-a)/(b-a),0),1);
+const lab=[[0,'Arc draws on'],[1.4,'Sun rises + light flash'],[2.4,'Base line wipes in'],[3.2,'Wordmark reveal'],[4.5,'Camera settles']];
+let t0=performance.now(),L=6;
+document.getElementById('r').onclick=()=>t0=performance.now();
+function size(){R.setSize(innerWidth,innerHeight,false);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+function frame(now){
+ const t=Math.min((now-t0)/1000,L),k=E(t/L);
+ R.domElement.style.opacity=1;
+ arcG.setDrawRange(0,Math.floor(total*E(seg(t,0,1.5))/3)*3);
+ const s=Math.max(B(seg(t,.8,1.8)),.001);sun.scale.setScalar(s*(seg(t,.8,1.8)>0?1:0)+.0001);
+ base.scale.set(1,Math.max(E(seg(t,1.5,2.4)),.001),1);
+ glow.intensity=60*Math.max(0,1-Math.abs(t-1.5)/.7)+8*E(seg(t,2,3));
+ key.intensity=2+2*Math.max(0,1-Math.abs(t-1.5)/.5);
+ const a=-.6+1.0*k,r=15-4.5*k;C.position.set(r*Math.sin(a),.8-.4*k,r*Math.cos(a));C.lookAt(0,-.4,0);
+ const w=document.getElementById('w');const p=E(seg(t,3,4.2));w.style.opacity=p;w.style.transform='translateY('+(20*(1-p))+'px)';w.style.letterSpacing=(.3-.26*p)+'em';
+ let l=lab[0][1];for(const x of lab)if(t>=x[0])l=x[1];document.getElementById('s').textContent=l;
+ R.render(S,C);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script></body></html>
